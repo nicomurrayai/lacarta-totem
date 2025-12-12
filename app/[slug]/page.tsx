@@ -24,29 +24,7 @@ const MenuHeader = memo(({
   handleViewModeToggle,
   setIsMenuOpen
 }: any) => {
-  return (
-    <header className="absolute top-0 left-0 right-0 z-20 pt-4 pb-2 pointer-events-none">
-      <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-2 pr-[20%] snap-x snap-mandatory px-4 pointer-events-auto">
-        {categories.map((category: string) => (
-          <button key={category} onClick={() => setSelectedCategory(category)} className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${selectedCategory === category ? "bg-white text-black shadow-md" : "bg-black/60 text-white"}`}>
-            {category}
-          </button>
-        ))}
-      </div>
-
-      <div className={`flex items-center ${allowGridView ? "justify-between" : "justify-end"}  px-4 pointer-events-auto`}>
-        {allowGridView && (
-          <button onClick={handleViewModeToggle} className="p-1 rounded-lg bg-black/60 flex items-center justify-center">
-            {viewMode === "feed" ? <Grid3x3 className="size-6 text-white" /> : <Smartphone className="size-6 text-white" />}
-          </button>
-        )}
-
-        <button onClick={() => setIsMenuOpen(true)} className="p-1 rounded-lg bg-black/60 flex items-center justify-center">
-          <Menu className="size-6 text-white " />
-        </button>
-      </div>
-    </header>
-  );
+  return null;
 });
 
 MenuHeader.displayName = "MenuHeader";
@@ -64,7 +42,6 @@ const FeedItem = memo(({ product, isActive, shouldRender, bgColor, textColor, on
     if (!videoRef.current) return;
 
     if (isActive && !isPaused) {
-        // Reproducir solo si está activo y NO pausado por el usuario
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
             playPromise.catch(() => {});
@@ -76,13 +53,12 @@ const FeedItem = memo(({ product, isActive, shouldRender, bgColor, textColor, on
 
   // 2. Manejo de Imágenes (Timer de 4 segundos)
   useEffect(() => {
-    // Limpiar timer anterior siempre
     if (timerRef.current) clearTimeout(timerRef.current);
 
     if (isActive && isImage && !isPaused) {
       timerRef.current = setTimeout(() => {
         onFinished();
-      }, 4000); // 4 segundos por imagen
+      }, 4000);
     }
 
     return () => {
@@ -108,12 +84,12 @@ const FeedItem = memo(({ product, isActive, shouldRender, bgColor, textColor, on
             <video 
                 ref={videoRef} 
                 className="absolute inset-0 w-full h-full object-cover" 
-                loop={false} // Importante: No loop para que funcione el onEnded
+                loop={false}
                 muted 
                 playsInline 
                 preload="metadata" 
                 src={product.contentUrl}
-                onEnded={onFinished} // Notificar al padre cuando termina el video
+                onEnded={onFinished}
             />
           )}
           <div className="absolute bottom-0 w-full h-[40%] bg-linear-to-b from-transparent to-black pointer-events-none" />
@@ -141,14 +117,11 @@ const FeedItem = memo(({ product, isActive, shouldRender, bgColor, textColor, on
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Optimization check
   if (prevProps.isActive !== nextProps.isActive) return false;
   if (prevProps.shouldRender !== nextProps.shouldRender) return false;
-  if (prevProps.isPaused !== nextProps.isPaused) return false; // Re-render si cambia el estado de pausa
+  if (prevProps.isPaused !== nextProps.isPaused) return false;
 
-  return (
-    prevProps.product._id === nextProps.product._id
-  );
+  return prevProps.product._id === nextProps.product._id;
 });
 
 FeedItem.displayName = "FeedItem";
@@ -178,14 +151,14 @@ export default function MenuPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentVisibleIndex, setCurrentVisibleIndex] = useState(0);
   const [isViewInitialized, setIsViewInitialized] = useState(false);
-  
-  // New State: Interaction handling
   const [isUserInteracting, setIsUserInteracting] = useState(false);
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
 
   // ------------- REFS -------------
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ------------- USE EFFECTS -------------
 
@@ -212,6 +185,13 @@ export default function MenuPage() {
           const index = Number(entry.target.getAttribute("data-index"));
           if (!isNaN(index)) {
             setCurrentVisibleIndex(index);
+            // Reset auto-scroll flag cuando el usuario scrollea manualmente
+            if (autoScrollTimeoutRef.current) {
+              clearTimeout(autoScrollTimeoutRef.current);
+            }
+            autoScrollTimeoutRef.current = setTimeout(() => {
+              setIsAutoScrolling(false);
+            }, 100);
           }
         }
       });
@@ -224,7 +204,12 @@ export default function MenuPage() {
       if (el) observerRef.current?.observe(el);
     });
 
-    return () => observerRef.current?.disconnect();
+    return () => {
+      observerRef.current?.disconnect();
+      if (autoScrollTimeoutRef.current) {
+        clearTimeout(autoScrollTimeoutRef.current);
+      }
+    };
   }, [viewMode, products, selectedCategory]); // eslint-disable-line
 
   // ------------- LOGIC: DATA HANDLING -------------
@@ -232,7 +217,6 @@ export default function MenuPage() {
   const categories = useMemo(() => {
     if (!products) return categoriesRef.current;
     
-    // Simplificación de lógica para el ejemplo
     const matchesTag = (p: any) => !tagsToFilter?.length || (p.tags && p.tags.some((t: string) => tagsToFilter.includes(t)));
     const filtered = products.filter((p: any) => p.show && matchesTag(p));
     const cats = Array.from(new Set(filtered.map((p: any) => p.category))) as string[];
@@ -256,22 +240,56 @@ export default function MenuPage() {
     return products.filter((p: any) => p.show && matchesTag(p) && p.category === activeCategory);
   }, [products, activeCategory, tagsToFilter]);
 
-  // ------------- LOGIC: AUTO SCROLL & INTERACTION -------------
+  // ------------- LOGIC: SMOOTH AUTO SCROLL -------------
 
   const scrollToNextItem = useCallback(() => {
-    if (filteredProducts.length === 0) return;
+    if (filteredProducts.length === 0 || !scrollContainerRef.current) return;
 
     let nextIndex = currentVisibleIndex + 1;
     
-    // Si llegamos al final, volvemos al principio (índice 0)
     if (nextIndex >= filteredProducts.length) {
       nextIndex = 0;
     }
 
     const element = itemsRef.current[nextIndex];
     if (element) {
-        // Usamos smooth para que se vea el retroceso (o instant si prefieres un salto brusco)
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      setIsAutoScrolling(true);
+      
+      // Deshabilitamos temporalmente el snap para scroll suave
+      const container = scrollContainerRef.current;
+      container.style.scrollSnapType = 'none';
+      
+      // Calculamos la posición exacta
+      const elementTop = element.offsetTop;
+      
+      // Scroll suave con requestAnimationFrame para mejor control
+      const startPosition = container.scrollTop;
+      const distance = elementTop - startPosition;
+      const duration = 800; // 800ms para la animación
+      let startTime: number | null = null;
+
+      const easeInOutCubic = (t: number): number => {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      };
+
+      const animation = (currentTime: number) => {
+        if (startTime === null) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
+        const progress = Math.min(timeElapsed / duration, 1);
+        const ease = easeInOutCubic(progress);
+        
+        container.scrollTop = startPosition + (distance * ease);
+
+        if (progress < 1) {
+          requestAnimationFrame(animation);
+        } else {
+          // Restauramos el snap después de la animación
+          container.style.scrollSnapType = 'y mandatory';
+          setIsAutoScrolling(false);
+        }
+      };
+
+      requestAnimationFrame(animation);
     }
   }, [currentVisibleIndex, filteredProducts.length]);
 
@@ -308,7 +326,7 @@ export default function MenuPage() {
           setIsMenuOpen={setIsMenuOpen}
         />
 
-        {/* --- OVERLAY BOTÓN VER CARTA (Solo visible al tocar) --- */}
+        {/* OVERLAY BOTÓN VER CARTA */}
         <div className={`absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-none ${isUserInteracting ? "opacity-100" : "opacity-0"}`}>
             <Link 
                 href="https://www.lacartaa.com/chiringuito-lounge-517" 
@@ -320,7 +338,7 @@ export default function MenuPage() {
             </Link>
         </div>
 
-        {/* Sidebar Menu (Igual que antes) */}
+        {/* Sidebar Menu */}
         <div className={`absolute inset-0 bg-black/10 backdrop-blur-md z-30 transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={() => setIsMenuOpen(false)}>
           <div className={`absolute right-0 top-0 h-full w-72 bg-black/40 shadow-2xl transform transition-transform duration-300 rounded-xl ${isMenuOpen ? "translate-x-0" : "translate-x-full"}`} onClick={(e) => e.stopPropagation()}>
             <div className="p-6 h-full flex flex-col">
@@ -365,16 +383,15 @@ export default function MenuPage() {
           </div>
         )}
 
-        {/* VISTA FEED (Con handlers de toque) */}
+        {/* VISTA FEED */}
         {viewMode === "feed" && (
           <div 
             ref={scrollContainerRef} 
             className="h-dvh overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
-            // Eventos para detectar interacción del usuario
             onTouchStart={handleInteractionStart}
             onTouchEnd={handleInteractionEnd}
-            onMouseDown={handleInteractionStart} // Para testing en desktop
-            onMouseUp={handleInteractionEnd}     // Para testing en desktop
+            onMouseDown={handleInteractionStart}
+            onMouseUp={handleInteractionEnd}
           >
             {filteredProducts.map((product: any, index: number) => {
               const isActive = index === currentVisibleIndex;
@@ -388,9 +405,8 @@ export default function MenuPage() {
                     shouldRender={shouldRender} 
                     bgColor={bgColor} 
                     textColor={textColor}
-                    // Props nuevas para lógica de scroll
                     onFinished={scrollToNextItem}
-                    isPaused={isUserInteracting}
+                    isPaused={isUserInteracting || isAutoScrolling}
                   />
                 </div>
               );
