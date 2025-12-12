@@ -2,6 +2,12 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+
+    users: defineTable({
+        userName: v.string(),
+        password: v.string()
+    }),
+
     businesses: defineTable({
         userId: v.string(),
         name: v.union(v.string(), v.null()),
@@ -27,12 +33,7 @@ export default defineSchema({
         category: v.string(),
         contentUrl: v.string(),
         contentType: v.string(),
-        show: v.boolean(),
-        tags: v.optional(v.union(v.array(v.string()), v.null())),
-        thumbnail: v.optional(v.union(v.string(), v.null()))
     }),
-
-
 });
 
 

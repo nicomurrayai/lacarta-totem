@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 export default function Home() {
   const router = useRouter();
@@ -12,32 +14,48 @@ export default function Home() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Hook de Convex para verificar usuario
+  const verifyUser = useMutation(api.users.verifyUser);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Simulación de una pequeña espera para dar sensación de procesamiento
-    setTimeout(() => {
-      // Lógica de autenticación local
-      if (username === 'pepito' && password === '1234') {
+    try {
+      // Llamar a Convex para verificar credenciales
+      const user = await verifyUser({
+        userName: username,
+        password: password,
+      });
+
+      if (user) {
+        // Usuario autenticado correctamente
+        // Puedes guardar el userId en localStorage o en un contexto
+        localStorage.setItem('userId', user.id);
+        localStorage.setItem('userName', user.userName);
         router.push('/dashboard');
       } else {
+        // Credenciales incorrectas
         setError('Usuario o contraseña incorrectos.');
-        setLoading(false);
       }
-    }, 800);
+    } catch (err) {
+      console.error('Error al autenticar:', err);
+      setError('Ocurrió un error al iniciar sesión. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#FF9A35] via-[#FF4D22] to-[#FF2E56]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FF9A35] via-[#FF4D22] to-[#FF2E56]">
       {/* Contenedor principal (Card) */}
       <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all hover:scale-[1.01]">
         
         {/* Encabezado / Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-extrabold tracking-tight">
-            La<span className='text-primary'>Carta!</span>
+            La<span className='text-[#FF4D22]'>Carta!</span>
           </h1>
           <p className="text-gray-500 mt-2 text-sm">
             Bienvenido de nuevo
