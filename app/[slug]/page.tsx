@@ -9,7 +9,6 @@ import { Menu, X, Grid3x3, Smartphone, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { FeedItemProps } from "@/types/types";
 
-// Tipado extendido para incluir las nuevas props de control
 interface EnhancedFeedItemProps extends FeedItemProps {
   onFinished: () => void;
   isPaused: boolean;

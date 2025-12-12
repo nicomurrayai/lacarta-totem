@@ -33,6 +33,7 @@ export default defineSchema({
         category: v.string(),
         contentUrl: v.string(),
         contentType: v.string(),
+        show:v.boolean()
     }),
 });
 
