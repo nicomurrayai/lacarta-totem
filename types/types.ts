@@ -1,3 +1,4 @@
+import { type LucideIcon } from "lucide-react";
 
 export interface FeedItemProps {
   product: any;
@@ -6,3 +7,10 @@ export interface FeedItemProps {
   bgColor: string;
   textColor: string;
 }
+
+export type Tab = {
+  name: string
+  path: string
+  icon: LucideIcon
+}
+0

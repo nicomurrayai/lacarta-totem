@@ -16,5 +16,9 @@ export default function Dashboard() {
 
   if (userId === null) return null;
 
-  return <div>Dashboard</div>;
+  return (
+    <div>
+
+    </div>
+  );
 }
