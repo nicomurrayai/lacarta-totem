@@ -313,7 +313,7 @@ export default function MenuPage() {
   // ------------ RENDER -------------
   return (
     <div className="fixed inset-0 bg-white">
-      <div className="max-w-107.5 mx-auto h-full bg-black/90 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.8)] relative">
+      <div className=" mx-auto h-full bg-black/90 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.8)] relative">
         
         <MenuHeader
           categories={categories}
