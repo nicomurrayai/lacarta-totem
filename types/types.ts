@@ -1,4 +1,5 @@
 import { type LucideIcon } from "lucide-react";
+import { Id } from "@/convex/_generated/dataModel";
 
 export interface FeedItemProps {
   product: any;
@@ -14,8 +15,10 @@ export type Tab = {
   icon: LucideIcon
 }
 
-export  interface Product {
-  _id: string;
+
+export interface Product {
+  _id: Id<"products">;
+  businessId: string;
   name: string;
   description: string;
   price: number;

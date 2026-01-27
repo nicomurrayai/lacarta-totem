@@ -1,37 +1,48 @@
+import { useState } from "react";
 import { Eye, Pencil } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Product } from "@/types/types";
-
-
+import EditProductModal from "./EditProductModal";
 
 export default function ProductCard({ product }: { product: Product }) {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
   return (
-    <Card className="overflow-hidden border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="text-2xl font-semibold text-gray-900 mb-1">
-              {product.name}
-            </h3>
+    <>
+      <Card className="overflow-hidden border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-1">
+                {product.name}
+              </h3>
+            </div>
           </div>
-        </div>
-        <p className="text-gray-700 text-sm leading-relaxed mb-4">
-          {product.description}
-        </p>
-        <p className="text-2xl font-bold text-gray-900 mb-6">
-          ${product.price.toLocaleString('es-AR')}
-        </p>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            className="flex-1 border-orange-500 text-orange-600 font-medium hover:bg-orange-50 rounded-lg py-2.5"
-          >
-            <Pencil className="w-4 h-4 mr-2" />
-            Editar 
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <p className="text-gray-700 text-sm leading-relaxed mb-4">
+            {product.description}
+          </p>
+          <p className="text-2xl font-bold text-gray-900 mb-6">
+            ${product.price.toLocaleString('es-AR')}
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1 border-orange-500 text-orange-600 font-medium hover:bg-orange-50 rounded-lg py-2.5"
+              onClick={() => setIsEditModalOpen(true)}
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Editar 
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <EditProductModal
+        product={product}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+      />
+    </>
   );
 }
