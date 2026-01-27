@@ -1,12 +1,34 @@
 import { useState } from "react";
-import { Eye, Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 import { Product } from "@/types/types";
 import EditProductModal from "./EditProductModal";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 export default function ProductCard({ product }: { product: Product }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const deleteProduct = useMutation(api.products.deleteProduct);
+
+  const handleDelete = async () => {
+    try {
+      await deleteProduct({ id: product._id });
+    } catch (error) {
+      console.error("Error al eliminar producto:", error);
+    }
+  };
 
   return (
     <>
@@ -34,6 +56,14 @@ export default function ProductCard({ product }: { product: Product }) {
               <Pencil className="w-4 h-4 mr-2" />
               Editar 
             </Button>
+            <Button
+              variant="outline"
+              className="flex-1 border-red-500 text-red-600 font-medium hover:bg-red-50 rounded-lg py-2.5"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Eliminar
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -43,6 +73,26 @@ export default function ProductCard({ product }: { product: Product }) {
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
       />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente el producto "{product.name}" del sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
