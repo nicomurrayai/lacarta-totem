@@ -13,4 +13,14 @@ export type Tab = {
   path: string
   icon: LucideIcon
 }
-0
+
+export  interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  contentUrl: string;
+  contentType: string;
+  show: boolean;
+}
